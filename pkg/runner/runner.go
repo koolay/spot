@@ -206,9 +206,6 @@ func (p *Process) runTaskOnHost(
 			return taskOnHostResp{}, err
 		}
 		defer remote.Close()
-		report(hostAddr, hostName, "run task %q, commands: %d\n", tsk.Name, len(tsk.Commands))
-	} else {
-		report("localhost", "", "run task %q, commands: %d (local)\n", tsk.Name, len(tsk.Commands))
 	}
 
 	resp := taskOnHostResp{vars: make(map[string]string), registered: make(map[string]string)}
