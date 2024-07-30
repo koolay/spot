@@ -65,13 +65,17 @@ func (s *colorizedWriter) WithHost(hostAddr, hostName string) LogWriter {
 		// we want to prevent log prefix duplication, i.e. [dev1.umputun.dev dev1.umputun.dev:22]
 		hostName = ""
 	}
-	return &colorizedWriter{wr: s.wr, hostAddr: hostAddr, hostName: hostName,
-		prefix: s.prefix, secrets: s.secrets, monochrome: s.monochrome}
+	return &colorizedWriter{
+		wr: s.wr, hostAddr: hostAddr, hostName: hostName,
+		prefix: s.prefix, secrets: s.secrets, monochrome: s.monochrome,
+	}
 }
 
 func (s *colorizedWriter) WithWriter(wr io.Writer) LogWriter {
-	return &colorizedWriter{wr: wr, hostAddr: s.hostAddr, hostName: s.hostName,
-		prefix: s.prefix, secrets: s.secrets, monochrome: s.monochrome}
+	return &colorizedWriter{
+		wr: wr, hostAddr: s.hostAddr, hostName: s.hostName,
+		prefix: s.prefix, secrets: s.secrets, monochrome: s.monochrome,
+	}
 }
 
 // Printf writes the given text to io.Writer with the colorized hostAddr prefix.
@@ -87,6 +91,9 @@ func (s *colorizedWriter) Write(p []byte) (n int, err error) {
 	scanner := bufio.NewScanner(bytes.NewReader(p))
 	for scanner.Scan() {
 		line := scanner.Text()
+		if strings.Contains(line, "/tmp/.spot-") {
+			continue
+		}
 		hostID := s.hostAddr
 		if s.hostName != "" {
 			hostID = s.hostName + " " + s.hostAddr
@@ -139,7 +146,14 @@ func MakeLogs(verbose, bw bool, secrets []string) Logs {
 		outLog = &colorizedWriter{wr: os.Stdout, prefix: " >", secrets: secrets, monochrome: bw}
 		errLog = &colorizedWriter{wr: os.Stdout, prefix: " !", secrets: secrets, monochrome: bw}
 	}
-	return Logs{Info: infoLog, Out: outLog, Err: errLog, verbose: verbose, secrets: secrets, monochrome: bw}
+	return Logs{
+		Info:       infoLog,
+		Out:        outLog,
+		Err:        errLog,
+		verbose:    verbose,
+		secrets:    secrets,
+		monochrome: bw,
+	}
 }
 
 func maskSecrets(s string, secrets []string) string {
@@ -147,7 +161,9 @@ func maskSecrets(s string, secrets []string) string {
 		if secret == " " || secret == "" {
 			continue
 		}
-		re := regexp.MustCompile(`\b` + regexp.QuoteMeta(secret) + `\b`) // matches the secret only if it appears as a whole word
+		re := regexp.MustCompile(
+			`\b` + regexp.QuoteMeta(secret) + `\b`,
+		) // matches the secret only if it appears as a whole word
 		s = re.ReplaceAllString(s, "****")
 	}
 	return s
