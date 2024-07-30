@@ -25,15 +25,6 @@ type Connector struct {
 // NewConnector creates a new Connector for a given user and private key.
 func NewConnector(privateKey string, timeout time.Duration, logs Logs) (res *Connector, err error) {
 	res = &Connector{privateKey: privateKey, timeout: timeout, logs: logs}
-	if privateKey == "" {
-		res.enableAgent = true
-		log.Printf("[DEBUG] no private key provided, use ssh agent only")
-		return res, nil
-	}
-	log.Printf("[DEBUG] use private key %q", privateKey)
-	if _, err := os.Stat(privateKey); os.IsNotExist(err) {
-		return nil, fmt.Errorf("private key file %q does not exist", privateKey)
-	}
 	return res, nil
 }
 
@@ -58,7 +49,12 @@ func (c *Connector) Connect(ctx context.Context, hostAddr, hostName, user string
 	if err != nil {
 		return nil, err
 	}
-	return &Remote{client: client, hostAddr: hostAddr, hostName: hostName, logs: c.logs.WithHost(hostAddr, hostName)}, nil
+	return &Remote{
+		client:   client,
+		hostAddr: hostAddr,
+		hostName: hostName,
+		logs:     c.logs.WithHost(hostAddr, hostName),
+	}, nil
 }
 
 func (c *Connector) forwardAgent(client *ssh.Client) error {
@@ -89,7 +85,10 @@ func (c *Connector) forwardAgent(client *ssh.Client) error {
 	return nil
 }
 
-func (c *Connector) sshClient(ctx context.Context, host, user string) (session *ssh.Client, err error) {
+func (c *Connector) sshClient(
+	ctx context.Context,
+	host, user string,
+) (session *ssh.Client, err error) {
 	log.Printf("[DEBUG] create ssh session to %s, user %s", host, user)
 	if !strings.Contains(host, ":") {
 		host += ":22"
@@ -120,7 +119,6 @@ func (c *Connector) sshClient(ctx context.Context, host, user string) (session *
 }
 
 func (c *Connector) sshConfig(user, privateKeyPath string) (*ssh.ClientConfig, error) {
-
 	// getAuth returns a list of ssh.AuthMethod to be used for authentication.
 	// if ssh agent is enabled, it will be used, otherwise private key will be used.
 	getAuth := func() (auth []ssh.AuthMethod, err error) {
@@ -161,5 +159,10 @@ func (c *Connector) sshConfig(user, privateKeyPath string) (*ssh.ClientConfig, e
 }
 
 func (c *Connector) String() string {
-	return fmt.Sprintf("ssh connector with private key %s.., timeout %v, agent %v", c.privateKey[:8], c.timeout, c.enableAgent)
+	return fmt.Sprintf(
+		"ssh connector with private key %s.., timeout %v, agent %v",
+		c.privateKey[:8],
+		c.timeout,
+		c.enableAgent,
+	)
 }
