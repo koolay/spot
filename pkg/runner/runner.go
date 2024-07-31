@@ -311,13 +311,11 @@ func (p *Process) runTaskOnHost(
 		// pattern := `(\{script: .+ -c ).+/spot-script.+}`
 		// re := regexp.MustCompile(pattern)
 		// details := re.ReplaceAllString(exResp.details, "${1}[multiline script]}")
-		details := exResp.details
 		report(
 			repHostAddr,
 			repHostName,
-			"completed command %q%s (%v)",
+			"completed command %q (%v)",
 			cmd.Name,
-			details,
 			since(stCmd),
 		)
 
