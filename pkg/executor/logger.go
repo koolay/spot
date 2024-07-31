@@ -134,17 +134,18 @@ func (s *colorizedWriter) hostColorizer(host string) func(format string, a ...in
 	return color.New(c).SprintfFunc()
 }
 
-// MakeLogs creates a new set of loggers for stdout and stderr and logger for the main info.
-// If verbose is true, the stdout and stderr logger will be colorized.
-// infoLog is always colorized and used to log the main info, like the command that is being executed.
-func MakeLogs(output io.Writer, verbose, bw bool, secrets []string) Logs {
+func MakeLogsWithOutput(output io.Writer, verbose, bw bool, secrets []string) Logs {
 	var infoLog, outLog, errLog LogWriter
+	if output == nil {
+		output = os.Stdout
+	}
+
 	infoLog = &colorizedWriter{wr: output, prefix: "", secrets: secrets, monochrome: bw}
-	outLog = &stdOutLogWriter{prefix: " >", level: "DEBUG", secrets: secrets}
+	outLog = &stdOutLogWriter{prefix: " |", level: "DEBUG", secrets: secrets}
 	errLog = &stdOutLogWriter{prefix: " !", level: "WARN", secrets: secrets}
 	if verbose {
-		outLog = &colorizedWriter{wr: os.Stdout, prefix: " >", secrets: secrets, monochrome: bw}
-		errLog = &colorizedWriter{wr: os.Stdout, prefix: " !", secrets: secrets, monochrome: bw}
+		outLog = &colorizedWriter{wr: output, prefix: " |", secrets: secrets, monochrome: bw}
+		errLog = &colorizedWriter{wr: output, prefix: " !", secrets: secrets, monochrome: bw}
 	}
 	return Logs{
 		Info:       infoLog,
@@ -154,6 +155,13 @@ func MakeLogs(output io.Writer, verbose, bw bool, secrets []string) Logs {
 		secrets:    secrets,
 		monochrome: bw,
 	}
+}
+
+// MakeLogs creates a new set of loggers for stdout and stderr and logger for the main info.
+// If verbose is true, the stdout and stderr logger will be colorized.
+// infoLog is always colorized and used to log the main info, like the command that is being executed.
+func MakeLogs(verbose, bw bool, secrets []string) Logs {
+	return MakeLogsWithOutput(os.Stdout, verbose, bw, secrets)
 }
 
 func maskSecrets(s string, secrets []string) string {
