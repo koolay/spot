@@ -137,9 +137,9 @@ func (s *colorizedWriter) hostColorizer(host string) func(format string, a ...in
 // MakeLogs creates a new set of loggers for stdout and stderr and logger for the main info.
 // If verbose is true, the stdout and stderr logger will be colorized.
 // infoLog is always colorized and used to log the main info, like the command that is being executed.
-func MakeLogs(verbose, bw bool, secrets []string) Logs {
+func MakeLogs(output io.Writer, verbose, bw bool, secrets []string) Logs {
 	var infoLog, outLog, errLog LogWriter
-	infoLog = &colorizedWriter{wr: os.Stdout, prefix: "", secrets: secrets, monochrome: bw}
+	infoLog = &colorizedWriter{wr: output, prefix: "", secrets: secrets, monochrome: bw}
 	outLog = &stdOutLogWriter{prefix: " >", level: "DEBUG", secrets: secrets}
 	errLog = &stdOutLogWriter{prefix: " !", level: "WARN", secrets: secrets}
 	if verbose {
